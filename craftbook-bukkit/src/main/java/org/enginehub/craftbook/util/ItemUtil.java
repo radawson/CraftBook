@@ -40,7 +40,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 public final class ItemUtil {
 
@@ -133,16 +132,6 @@ public final class ItemUtil {
         return true;
     }
 
-    private static final Pattern STRIP_RESET_PATTERN = Pattern.compile("(?i)" + '\u00A7' + "[Rr]");
-
-    //TODO Move to a StringUtil.
-    public static String stripResetChar(String message) {
-
-        if (message == null)
-            return null;
-
-        return STRIP_RESET_PATTERN.matcher(message).replaceAll("");
-    }
 
     public static boolean areRecipesIdentical(Recipe rec1, Recipe rec2) {
 
@@ -248,13 +237,13 @@ public final class ItemUtil {
         //Display Names
         String displayName1;
         if (meta.hasDisplayName())
-            displayName1 = ChatColor.translateAlternateColorCodes('&', stripResetChar(meta.getDisplayName().trim()));
+            displayName1 = ChatColor.translateAlternateColorCodes('&', StringUtil.stripResetChar(meta.getDisplayName().trim()));
         else
             displayName1 = "$IGNORE";
 
         String displayName2;
         if (meta2.hasDisplayName())
-            displayName2 = ChatColor.translateAlternateColorCodes('&', stripResetChar(meta2.getDisplayName().trim()));
+            displayName2 = ChatColor.translateAlternateColorCodes('&', StringUtil.stripResetChar(meta2.getDisplayName().trim()));
         else
             displayName2 = "";
 
@@ -268,12 +257,12 @@ public final class ItemUtil {
         List<String> lore1 = new ArrayList<>();
         if (meta.hasLore())
             for (String lore : meta.getLore())
-                lore1.add(ChatColor.translateAlternateColorCodes('&', stripResetChar(lore.trim())));
+                lore1.add(ChatColor.translateAlternateColorCodes('&', StringUtil.stripResetChar(lore.trim())));
 
         List<String> lore2 = new ArrayList<>();
         if (meta2.hasLore())
             for (String lore : meta2.getLore())
-                lore2.add(ChatColor.translateAlternateColorCodes('&', stripResetChar(lore.trim())));
+                lore2.add(ChatColor.translateAlternateColorCodes('&', StringUtil.stripResetChar(lore.trim())));
 
         if (lore1.size() != lore2.size())
             return false;

@@ -16,9 +16,12 @@
 package org.enginehub.craftbook.mechanics.ic.gates.world.entity;
 
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Server;
+import org.bukkit.World;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.enginehub.craftbook.bukkit.BukkitChangedSign;
 import org.enginehub.craftbook.mechanics.ic.AbstractICFactory;
@@ -27,11 +30,21 @@ import org.enginehub.craftbook.mechanics.ic.ChipState;
 import org.enginehub.craftbook.mechanics.ic.IC;
 import org.enginehub.craftbook.mechanics.ic.ICFactory;
 import org.enginehub.craftbook.mechanics.ic.ICVerificationException;
+import org.enginehub.craftbook.CraftBook;
+import org.enginehub.craftbook.bukkit.CraftBookPlugin;
+import org.enginehub.craftbook.mechanics.ic.ICMechanic;
 import org.enginehub.craftbook.util.HistoryHashMap;
 import org.enginehub.craftbook.util.PlayerType;
 import org.enginehub.craftbook.util.RegexUtil;
 import org.enginehub.craftbook.util.SearchArea;
 import org.enginehub.craftbook.util.Tuple2;
+import org.enginehub.craftbook.util.persistence.YamlStorage;
+
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Map;
 
 public class TeleportTransmitter extends AbstractSelfTriggeredIC {
 
@@ -141,9 +154,13 @@ public class TeleportTransmitter extends AbstractSelfTriggeredIC {
 
     public static class Factory extends AbstractICFactory {
 
+        private static File storageFile;
+        private static YamlConfiguration storageConfig;
+
         public Factory(Server server) {
 
             super(server);
+            storageFile = new File(CraftBookPlugin.inst().getDataFolder(), "teleport-locations.yml");
         }
 
         @Override
@@ -183,43 +200,59 @@ public class TeleportTransmitter extends AbstractSelfTriggeredIC {
                 throw new ICVerificationException("Invalid SearchArea on 4th line!");
         }
 
-        @SuppressWarnings("unchecked")
         @Override
         public void load() {
+            super.load();
+            loadPersistentData();
+        }
 
-            /* FIXME if (!(ICMechanic.instance.savePersistentData && CraftBookPlugin.inst().hasPersistentStorage()))
-                return;
-
-            if (CraftBookPlugin.inst().getPersistentStorage().has("teleport-ic-locations.list")) {
-
-                Set<String> list = new HashSet<>((Set<String>) CraftBookPlugin.inst().getPersistentStorage().get("teleport-ic-locations.list"));
-
-                for (String ent : list) {
-                    String locString = (String) CraftBookPlugin.inst().getPersistentStorage().get("teleport-ic-locations." + ent);
-                    String[] bits = RegexUtil.COLON_PATTERN.split(locString);
-                    Location loc = new Location(Bukkit.getWorld(bits[0]), Double.parseDouble(bits[1]), Double.parseDouble(bits[2]), Double.parseDouble(bits[3]));
-                    TeleportTransmitter.lastKnownLocations.put(ent, loc);
+        private void loadPersistentData() {
+            // Try to migrate from old binary format
+            File oldFile = new File(CraftBookPlugin.inst().getDataFolder(), "teleport-locations.dat");
+            if (oldFile.exists()) {
+                try (DataInputStream stream = new DataInputStream(new FileInputStream(oldFile))) {
+                    int count = stream.readInt();
+                    for (int i = 0; i < count; i++) {
+                        String band = stream.readUTF();
+                        String worldName = stream.readUTF();
+                        double x = stream.readDouble();
+                        double y = stream.readDouble();
+                        double z = stream.readDouble();
+                        float yaw = stream.readFloat();
+                        float pitch = stream.readFloat();
+                        
+                        World world = Bukkit.getWorld(worldName);
+                        if (world != null) {
+                            Location location = new Location(world, x, y, z, yaw, pitch);
+                            lastKnownLocations.put(band, location);
+                        }
+                    }
+                    CraftBook.LOGGER.info("Migrated teleport locations from binary format to YAML");
+                    // Delete old file after successful migration
+                    oldFile.delete();
+                } catch (IOException e) {
+                    CraftBook.LOGGER.warn("Failed to migrate teleport locations from old format, starting fresh", e);
                 }
-            }*/
+            }
+
+            // Load from YAML
+            storageConfig = YamlStorage.loadConfiguration(storageFile);
+            Map<String, Location> loadedLocations = YamlStorage.getLocationMap(storageConfig, "teleport-locations");
+            if (!loadedLocations.isEmpty()) {
+                lastKnownLocations.clear();
+                lastKnownLocations.putAll(loadedLocations);
+            }
         }
 
         @Override
         public void unload() {
-
-            /* FIXME if (!(ICMechanic.instance.savePersistentData && CraftBookPlugin.inst().hasPersistentStorage()))
-                return;
-
-            CraftBookPlugin.inst().getPersistentStorage().set("teleport-ic-locations.list",
-                new HashSet<>(TeleportTransmitter.lastKnownLocations.keySet()));
-
-            for (Entry<String, Location> locations : TeleportTransmitter.lastKnownLocations.entrySet()) {
-                if (locations == null || locations.getValue() == null)
-                    continue;
-
-                String loc = locations.getValue().getWorld().getName() + ":" + locations.getValue().getBlockX() + ":" + locations.getValue().getBlockY() + ":" + locations.getValue().getBlockZ();
-
-                CraftBookPlugin.inst().getPersistentStorage().set("teleport-ic-locations." + locations.getKey(), loc);
-            }*/
+            if (ICMechanic.instance != null && ICMechanic.instance.savePersistentData) {
+                if (storageConfig == null) {
+                    storageConfig = YamlStorage.loadConfiguration(storageFile);
+                }
+                YamlStorage.setLocationMap(storageConfig, "teleport-locations", lastKnownLocations);
+                YamlStorage.saveConfiguration(storageConfig, storageFile);
+            }
         }
 
         @Override

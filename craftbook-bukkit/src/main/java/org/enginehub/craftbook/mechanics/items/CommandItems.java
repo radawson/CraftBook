@@ -66,6 +66,8 @@ import org.enginehub.craftbook.util.ItemUtil;
 import org.enginehub.craftbook.util.ParsingUtil;
 import org.enginehub.craftbook.util.ProtectionUtil;
 import org.enginehub.craftbook.util.Tuple2;
+import org.enginehub.craftbook.util.persistence.YamlStorage;
+import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
@@ -83,6 +85,8 @@ public class CommandItems extends AbstractCraftBookMechanic implements Listener 
     public static CommandItems INSTANCE;
 
     private YAMLProcessor config;
+    private File deathItemsFile;
+    private YamlConfiguration deathItemsConfig;
 
     private Set<CommandItemDefinition> definitions;
 
@@ -106,16 +110,8 @@ public class CommandItems extends AbstractCraftBookMechanic implements Listener 
 
     @Override
     public void disable() {
-        /* FIXME for (Entry<UUID, List<ItemStack>> deathPersistEntry : deathPersistItems.entrySet()) {
-            Map<String, List<String>> items = (Map<String, List<String>>) CraftBookPlugin.inst().getPersistentStorage().get("command-items.death-items");
-            List<String> its = items.get(deathPersistEntry.getKey().toString());
-            if (its == null) its = new ArrayList<>();
-            for (ItemStack stack : deathPersistEntry.getValue()) {
-                its.add(ItemSyntax.getStringFromItem(stack));
-            }
-            items.put(deathPersistEntry.getKey().toString(), its);
-            CraftBookPlugin.inst().getPersistentStorage().set("command-items.death-items", items);
-        }*/
+        // Save death items to YAML file
+        saveDeathItems();
 
         MechanicCommandRegistrar registrar = CraftBookPlugin.inst().getCommandManager().getMechanicRegistrar();
         registrar.unregisterTopLevel("commanditems");
@@ -124,7 +120,24 @@ public class CommandItems extends AbstractCraftBookMechanic implements Listener 
         definitions = null;
         cooldownPeriods = null;
         config = null;
+        deathItemsConfig = null;
         INSTANCE = null;
+    }
+
+    /**
+     * Saves death items to YAML file using Paper's YamlConfiguration.
+     */
+    private void saveDeathItems() {
+        if (deathItemsFile == null) {
+            deathItemsFile = new File(CraftBookPlugin.inst().getDataFolder(), "command-items/death-items.yml");
+        }
+        if (deathItemsConfig == null) {
+            deathItemsConfig = YamlStorage.loadConfiguration(deathItemsFile);
+        }
+
+        // Save current death items using YamlStorage helper
+        YamlStorage.setItemStackMap(deathItemsConfig, "death-items", deathPersistItems);
+        YamlStorage.saveConfiguration(deathItemsConfig, deathItemsFile);
     }
 
     @Override
@@ -199,22 +212,13 @@ public class CommandItems extends AbstractCraftBookMechanic implements Listener 
             }, 10, 10);
         }
 
-        /* FIXME if (!CraftBookPlugin.inst().getPersistentStorage().has("command-items.death-items")) {
-            CraftBookPlugin.inst().getPersistentStorage().set("command-items.death-items", new HashMap<String, List<String>>());
-        } else {
-            Map<String, List<String>> items = (Map<String, List<String>>) CraftBookPlugin.inst().getPersistentStorage().get("command-items.death-items");
-            for (Entry<String, List<String>> entry : items.entrySet()) {
-                UUID uuid = UUID.fromString(entry.getKey());
-                List<ItemStack> its = Lists.newArrayList();
-                for (String item : entry.getValue()) {
-                    its.add(ItemSyntax.getItem(item));
-                }
-                deathPersistItems.put(uuid, its);
-            }
-
-            items.clear();
-            CraftBookPlugin.inst().getPersistentStorage().set("command-items.death-items", items);
-        }*/
+        // Load death items from YAML file using Paper's YamlConfiguration
+        deathItemsFile = new File(CraftBookPlugin.inst().getDataFolder(), "command-items/death-items.yml");
+        deathItemsConfig = YamlStorage.loadConfiguration(deathItemsFile);
+        Map<UUID, List<ItemStack>> loadedItems = YamlStorage.getItemStackMap(deathItemsConfig, "death-items");
+        if (!loadedItems.isEmpty()) {
+            deathPersistItems.putAll(loadedItems);
+        }
 
         doChat = definitions.stream().anyMatch(def -> def.clickType == ClickType.PLAYER_CHAT);
     }
@@ -386,6 +390,8 @@ public class CommandItems extends AbstractCraftBookMechanic implements Listener 
                     items.add(stack);
                     deathPersistItems.put(event.getEntity().getUniqueId(), items);
                     stackIt.remove();
+                    // Save immediately after adding to persist the change
+                    saveDeathItems();
                     break;
                 }
             }
@@ -423,6 +429,8 @@ public class CommandItems extends AbstractCraftBookMechanic implements Listener 
             event.getPlayer().getInventory().addItem(it);
         }
         deathPersistItems.remove(event.getPlayer().getUniqueId());
+        // Save immediately after removing to persist the change
+        saveDeathItems();
     }
 
     public void performCommandItems(ItemStack item, final Player player, final Event event) {

@@ -26,6 +26,7 @@ import org.enginehub.craftbook.mechanics.minecart.blocks.CartMechanismBlocks;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 public final class RailUtil {
 
@@ -33,8 +34,7 @@ public final class RailUtil {
     }
 
     public static List<BlockInventoryHolder> getNearbyInventoryBlocks(CartMechanismBlocks blocks) {
-        // TODO Potentially try to implement this as a stream to lazy-grab containers, this theoretically will do a lot of calls.
-
+        // Use streams to lazy-evaluate container checks, reducing unnecessary block state lookups
         List<Block> searchLocations = new ArrayList<>();
         if (blocks.hasBase()) {
             searchLocations.add(blocks.base());
@@ -46,47 +46,35 @@ public final class RailUtil {
             searchLocations.add(blocks.sign());
         }
 
-        List<BlockInventoryHolder> containers = new ArrayList<>();
-        for (Block body : searchLocations) {
-            int x = body.getX();
-            int y = body.getY();
-            int z = body.getZ();
-            World world = body.getWorld();
+        return searchLocations.stream()
+            .flatMap(body -> {
+                int x = body.getX();
+                int y = body.getY();
+                int z = body.getZ();
+                World world = body.getWorld();
 
-            if (InventoryUtil.doesBlockHaveInventory(world.getBlockAt(x, y, z))) {
-                containers.add((BlockInventoryHolder) world.getBlockAt(x, y, z).getState(false));
-            }
-
-            if (InventoryUtil.doesBlockHaveInventory(world.getBlockAt(x - 1, y, z))) {
-                containers.add((BlockInventoryHolder) world.getBlockAt(x - 1, y, z).getState(false));
-                if (InventoryUtil.doesBlockHaveInventory(world.getBlockAt(x - 2, y, z))) {
-                    containers.add((BlockInventoryHolder) world.getBlockAt(x - 2, y, z).getState(false));
-                }
-            }
-
-            if (InventoryUtil.doesBlockHaveInventory(world.getBlockAt(x + 1, y, z))) {
-                containers.add((BlockInventoryHolder) world.getBlockAt(x + 1, y, z).getState(false));
-                if (InventoryUtil.doesBlockHaveInventory(world.getBlockAt(x + 2, y, z))) {
-                    containers.add((BlockInventoryHolder) world.getBlockAt(x + 2, y, z).getState(false));
-                }
-            }
-
-            if (InventoryUtil.doesBlockHaveInventory(world.getBlockAt(x, y, z - 1))) {
-                containers.add((BlockInventoryHolder) world.getBlockAt(x, y, z - 1).getState(false));
-                if (InventoryUtil.doesBlockHaveInventory(world.getBlockAt(x, y, z - 2))) {
-                    containers.add((BlockInventoryHolder) world.getBlockAt(x, y, z - 2).getState(false));
-                }
-            }
-
-            if (InventoryUtil.doesBlockHaveInventory(world.getBlockAt(x, y, z + 1))) {
-                containers.add((BlockInventoryHolder) world.getBlockAt(x, y, z + 1).getState(false));
-                if (InventoryUtil.doesBlockHaveInventory(world.getBlockAt(x, y, z + 2))) {
-                    containers.add((BlockInventoryHolder) world.getBlockAt(x, y, z + 2).getState(false));
-                }
-            }
-        }
-
-        return containers;
+                // Generate stream of offsets to check: center, then cardinal directions with optional second block
+                return Stream.of(
+                    // Center block
+                    new int[] { x, y, z },
+                    // Negative X direction (up to 2 blocks)
+                    new int[] { x - 1, y, z },
+                    new int[] { x - 2, y, z },
+                    // Positive X direction (up to 2 blocks)
+                    new int[] { x + 1, y, z },
+                    new int[] { x + 2, y, z },
+                    // Negative Z direction (up to 2 blocks)
+                    new int[] { x, y, z - 1 },
+                    new int[] { x, y, z - 2 },
+                    // Positive Z direction (up to 2 blocks)
+                    new int[] { x, y, z + 1 },
+                    new int[] { x, y, z + 2 }
+                )
+                .map(offset -> world.getBlockAt(offset[0], offset[1], offset[2]))
+                .filter(InventoryUtil::doesBlockHaveInventory)
+                .map(block -> (BlockInventoryHolder) block.getState(false));
+            })
+            .toList();
     }
 
     public static boolean isTrack(BlockType blockType) {

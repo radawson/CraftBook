@@ -119,8 +119,9 @@ public class ICMechanic extends AbstractCraftBookMechanic implements Listener {
         if (!matcher.matches()) return null;
 
         String prefix = matcher.group(2);
-        // TODO: remove after some time to stop converting existing MCA ICs
-        // convert existing MCA ICs to the new [MCXXXX]A syntax
+        // Legacy MCA IC conversion: converts old [MCAXXXX] format to [MCXXXX]A
+        // TODO: Evaluate removal - this migration code can be removed once all existing MCA ICs have been converted
+        // or after a sufficient grace period (consider checking last usage date or version)
         if (prefix.equalsIgnoreCase("MCA")) {
             sign.setLine(1, Component.text((line1.toLowerCase(Locale.ENGLISH).replace("mca", "mc") + "a").toUpperCase(Locale.ENGLISH)));
             sign.update(false);
@@ -394,8 +395,9 @@ public class ICMechanic extends AbstractCraftBookMechanic implements Listener {
 
             try {
                 String prefix = matcher.group(2);
-                // TODO: remove after some time to stop converting existing MCA ICs
-                // convert existing MCA ICs to the new [MCXXXX]A syntax
+                // Legacy MCA IC conversion: converts old [MCAXXXX] format to [MCXXXX]A
+                // TODO: Evaluate removal - this migration code can be removed once all existing MCA ICs have been converted
+                // or after a sufficient grace period (consider checking last usage date or version)
                 if (prefix.equalsIgnoreCase("MCA")) {
                     event.setLine(1, (event.getLine(1).toLowerCase(Locale.ENGLISH).replace("mca", "mc") + "a").toUpperCase(Locale.ENGLISH));
 

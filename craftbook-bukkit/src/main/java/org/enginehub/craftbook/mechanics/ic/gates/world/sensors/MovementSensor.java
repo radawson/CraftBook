@@ -109,14 +109,19 @@ public class MovementSensor extends AbstractSelfTriggeredIC {
     public boolean check() {
 
         for (Entity entity : center.getLocation().getNearbyEntities(radius.x(), radius.y(), radius.z())) {
-            if (entity.isValid()) {
-                for (EntityType type : types) { // Check Type
-                    if (type.is(entity)) { // Check Radius
-                        if (LocationUtil.isWithinRadius(center.getLocation(), entity.getLocation(), radius)) {
-                            if (entity.getVelocity().lengthSquared() >= 0.01) return true;
+            if (!entity.isValid()) {
+                continue;
+            }
+            for (EntityType type : types) { // Check Type
+                if (type.is(entity)) { // Check Radius
+                    if (LocationUtil.isWithinRadius(center.getLocation(), entity.getLocation(), radius)) {
+                        // Check if entity has significant velocity (moving)
+                        // Threshold of 0.01 (0.1 blocks/tick) filters out minor movement noise
+                        if (entity.getVelocity().lengthSquared() >= 0.01) {
+                            return true;
                         }
-                        break;
                     }
+                    break;
                 }
             }
         }

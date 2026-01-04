@@ -22,7 +22,9 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.ChatColor;
 import org.bukkit.Server;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.enginehub.craftbook.bukkit.BukkitChangedSign;
+import org.enginehub.craftbook.CraftBook;
 import org.enginehub.craftbook.CraftBookPlayer;
 import org.enginehub.craftbook.bukkit.CraftBookPlugin;
 import org.enginehub.craftbook.mechanics.ic.AbstractIC;
@@ -34,11 +36,11 @@ import org.enginehub.craftbook.mechanics.ic.IC;
 import org.enginehub.craftbook.mechanics.ic.ICFactory;
 import org.enginehub.craftbook.mechanics.ic.ICMechanic;
 import org.enginehub.craftbook.mechanics.ic.ICVerificationException;
-import org.enginehub.craftbook.mechanics.ic.PersistentDataIC;
+import org.enginehub.craftbook.util.persistence.YamlStorage;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -95,13 +97,16 @@ public class WirelessTransmitter extends AbstractIC {
             memory.add(band);
     }
 
-    public static class Factory extends AbstractICFactory implements PersistentDataIC, ConfigurableIC, CommandIC {
+    public static class Factory extends AbstractICFactory implements ConfigurableIC, CommandIC {
 
         public boolean requirename;
+        private static File storageFile;
+        private static YamlConfiguration storageConfig;
 
         public Factory(Server server) {
 
             super(server);
+            storageFile = new File(CraftBookPlugin.inst().getDataFolder(), "wireless-bands.yml");
         }
 
         @Override
@@ -160,37 +165,46 @@ public class WirelessTransmitter extends AbstractIC {
         }
 
         @Override
-        public void loadPersistentData(DataInputStream stream) throws IOException {
-
-            int length = stream.readInt();
-            for (int i = 0; i < length; i++)
-                memory.add(stream.readUTF());
-            stream.close();
-            getStorageFile().delete();
-        }
-
-        @Override
-        public void savePersistentData(DataOutputStream stream) throws IOException {
-        }
-
-        @Override
-        public File getStorageFile() {
-            return new File(CraftBookPlugin.inst().getDataFolder(), "wireless-bands.dat");
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
         public void load() {
             super.load();
+            loadPersistentData();
+        }
 
-            /* FIXME if (ICMechanic.instance.savePersistentData && CraftBookPlugin.inst().hasPersistentStorage() && CraftBookPlugin.inst().getPersistentStorage().has("wireless-ic-states"))
-                WirelessTransmitter.memory.addAll((Set<String>) CraftBookPlugin.inst().getPersistentStorage().get("wireless-ic-states"));*/
+        private void loadPersistentData() {
+            // Try to migrate from old binary format
+            File oldFile = new File(CraftBookPlugin.inst().getDataFolder(), "wireless-bands.dat");
+            if (oldFile.exists()) {
+                try (DataInputStream stream = new DataInputStream(new FileInputStream(oldFile))) {
+                    int length = stream.readInt();
+                    for (int i = 0; i < length; i++) {
+                        memory.add(stream.readUTF());
+                    }
+                    CraftBook.LOGGER.info("Migrated wireless bands from binary format to YAML");
+                    // Delete old file after successful migration
+                    oldFile.delete();
+                } catch (IOException e) {
+                    CraftBook.LOGGER.warn("Failed to migrate wireless bands from old format, starting fresh", e);
+                }
+            }
+
+            // Load from YAML
+            storageConfig = YamlStorage.loadConfiguration(storageFile);
+            Set<String> loadedBands = YamlStorage.getStringSet(storageConfig, "wireless-bands");
+            if (!loadedBands.isEmpty()) {
+                memory.clear();
+                memory.addAll(loadedBands);
+            }
         }
 
         @Override
         public void unload() {
-            /* FIXME if (ICMechanic.instance.savePersistentData && CraftBookPlugin.inst().hasPersistentStorage())
-                CraftBookPlugin.inst().getPersistentStorage().set("wireless-ic-states", memory);*/
+            if (ICMechanic.instance != null && ICMechanic.instance.savePersistentData) {
+                if (storageConfig == null) {
+                    storageConfig = YamlStorage.loadConfiguration(storageFile);
+                }
+                YamlStorage.setStringSet(storageConfig, "wireless-bands", memory);
+                YamlStorage.saveConfiguration(storageConfig, storageFile);
+            }
         }
 
         @Override
