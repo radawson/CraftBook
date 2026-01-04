@@ -74,6 +74,11 @@ tasks.named<ShadowJar>("shadowJar") {
 
         relocate("org.bstats", "org.enginehub.craftbook.bukkit.bstats")
     }
+    // Ensure bstats is not minimized - exclude it from minimization
+    // The platform build logic enables minimize(), but bstats must be included
+    minimize {
+        exclude(dependency("org.bstats:bstats-bukkit"))
+    }
 }
 
 tasks.named("assemble").configure {
