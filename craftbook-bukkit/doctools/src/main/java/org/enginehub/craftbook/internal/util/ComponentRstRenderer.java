@@ -90,7 +90,7 @@ public class ComponentRstRenderer {
     }
 
     private static int lastNonWhitespace(StringBuilder builder) {
-        for (int i = builder.length(); i > 0; i--) {
+        for (int i = builder.length() - 1; i >= 0; i--) {
             if (!Character.isWhitespace(builder.charAt(i))) {
                 return i;
             }
