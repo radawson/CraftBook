@@ -31,6 +31,17 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
+/**
+ * Handles dynamic registration of mechanic-specific commands using the Piston command system.
+ *
+ * <p>Note: Core CraftBook commands have been migrated to Paper's Brigadier command system,
+ * which registers commands at bootstrap time. This registrar is retained for mechanics that
+ * still use Piston commands. Brigadier-based mechanic commands should check at runtime
+ * whether their mechanic is enabled before executing.</p>
+ *
+ * <p>For new mechanic commands, prefer using Brigadier commands registered in CraftBookBootstrap
+ * with runtime mechanic enablement checks.</p>
+ */
 public class MechanicCommandRegistrar {
     private final CommandManagerService service;
     private final CommandManager topLevelCommandManager;

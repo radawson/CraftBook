@@ -166,6 +166,15 @@ public abstract class VariableManager extends AbstractCraftBookMechanic {
     protected boolean playerChatOverride;
     private int maxVariableSize;
 
+    /**
+     * Returns whether variables default to global namespace when no namespace is provided.
+     *
+     * @return true if defaulting to global namespace
+     */
+    public boolean isDefaultToGlobal() {
+        return defaultToGlobal;
+    }
+
     @Override
     public void loadFromConfiguration(YAMLProcessor config) {
         config.setComment("default-to-global", "Whether to default to global or the player's namespace when no namespace is provided");

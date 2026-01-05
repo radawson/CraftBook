@@ -32,12 +32,10 @@ import org.enginehub.craftbook.ChangedSign;
 import org.enginehub.craftbook.CraftBook;
 import org.enginehub.craftbook.bukkit.CraftBookPlugin;
 import org.enginehub.craftbook.mechanic.CraftBookMechanic;
-import org.enginehub.craftbook.mechanic.MechanicCommandRegistrar;
 import org.enginehub.craftbook.mechanic.MechanicType;
 import org.enginehub.craftbook.mechanic.MechanicTypes;
 import org.enginehub.craftbook.mechanic.exception.MechanicInitializationException;
 import org.enginehub.craftbook.mechanics.ic.ICManager;
-import org.enginehub.craftbook.mechanics.variables.VariableCommands;
 import org.enginehub.craftbook.mechanics.variables.VariableConfiguration;
 import org.enginehub.craftbook.mechanics.variables.VariableKey;
 import org.enginehub.craftbook.mechanics.variables.VariableManager;
@@ -45,7 +43,6 @@ import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -67,28 +64,18 @@ public class BukkitVariableManager extends VariableManager implements Listener {
             if (!Files.exists(varFile)) {
                 Files.createFile(varFile);
             }
-            variableConfiguration = new VariableConfiguration(new YAMLProcessor(varFile, true, YAMLFormat.EXTENDED));
+            variableConfiguration = new VariableConfiguration(new YAMLProcessor(varFile.toFile(), true, YAMLFormat.EXTENDED));
             variableConfiguration.load();
         } catch (Exception e) {
             throw new MechanicInitializationException(MechanicTypes.VARIABLES.get(), TranslatableComponent.of("craftbook.variables.failed-to-load"), e);
         }
 
-        MechanicCommandRegistrar registrar = CraftBookPlugin.inst().getCommandManager().getMechanicRegistrar();
-        registrar.registerTopLevelWithSubCommands(
-            "variables",
-            List.of("var", "variable", "vars"),
-            "CraftBook Variable Commands",
-            VariableCommands::register
-        );
+        // Variable commands are now registered via Brigadier in CraftBookBootstrap
     }
 
     @Override
     public void disable() {
-        MechanicCommandRegistrar registrar = CraftBookPlugin.inst().getCommandManager().getMechanicRegistrar();
-        registrar.unregisterTopLevel("variables");
-        registrar.unregisterTopLevel("var");
-        registrar.unregisterTopLevel("variable");
-        registrar.unregisterTopLevel("vars");
+        // Variable commands are registered globally via Brigadier, no need to unregister here
 
         if (variableConfiguration != null) {
             variableConfiguration.save();

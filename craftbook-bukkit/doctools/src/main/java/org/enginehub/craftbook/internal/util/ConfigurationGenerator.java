@@ -42,7 +42,8 @@ public class ConfigurationGenerator {
             e.printStackTrace();
         }
 
-        YamlConfiguration config = new BukkitConfiguration(new YAMLProcessor(file, true, YAMLFormat.EXTENDED));
+        @SuppressWarnings({"deprecation", "InlineMeInliner"})
+        YamlConfiguration config = new BukkitConfiguration(new YAMLProcessor(file.toFile(), true, YAMLFormat.EXTENDED));
         config.load();
 
         try {

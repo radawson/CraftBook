@@ -37,9 +37,10 @@ public abstract class AbstractCraftBookMechanic implements CraftBookMechanic {
         return this.mechanicType;
     }
 
+    @SuppressWarnings({"deprecation", "InlineMeInliner"})
     @Override
     public void loadConfiguration(Path configFile) {
-        YAMLProcessor mechanicConfig = new YAMLProcessor(configFile, true, YAMLFormat.EXTENDED);
+        YAMLProcessor mechanicConfig = new YAMLProcessor(configFile.toFile(), true, YAMLFormat.EXTENDED);
 
         try {
             mechanicConfig.load();

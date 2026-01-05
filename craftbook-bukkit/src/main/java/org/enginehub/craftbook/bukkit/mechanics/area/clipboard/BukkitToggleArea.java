@@ -41,9 +41,7 @@ import org.enginehub.craftbook.bukkit.CraftBookPlugin;
 import org.enginehub.craftbook.bukkit.events.SignClickEvent;
 import org.enginehub.craftbook.bukkit.events.SourcedBlockRedstoneEvent;
 import org.enginehub.craftbook.mechanic.CraftBookMechanic;
-import org.enginehub.craftbook.mechanic.MechanicCommandRegistrar;
 import org.enginehub.craftbook.mechanic.MechanicType;
-import org.enginehub.craftbook.mechanics.area.clipboard.AreaCommands;
 import org.enginehub.craftbook.mechanics.area.clipboard.CopyManager;
 import org.enginehub.craftbook.mechanics.area.clipboard.ToggleArea;
 import org.enginehub.craftbook.util.EventUtil;
@@ -52,7 +50,6 @@ import org.enginehub.craftbook.util.SignUtil;
 import org.enginehub.craftbook.util.persistence.OwnedSignHelper;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -64,22 +61,13 @@ public class BukkitToggleArea extends ToggleArea implements Listener {
 
     @Override
     public void enable() {
-        MechanicCommandRegistrar registrar = CraftBookPlugin.inst().getCommandManager().getMechanicRegistrar();
-        registrar.registerTopLevelWithSubCommands(
-            "area",
-            List.of("togglearea"),
-            "CraftBook ToggleArea Commands",
-            (commandManager, registration) -> AreaCommands.register(commandManager, registration, this)
-        );
+        // Area commands are now registered via Brigadier in CraftBookBootstrap
     }
 
     @Override
     public void disable() {
         super.disable();
-
-        MechanicCommandRegistrar registrar = CraftBookPlugin.inst().getCommandManager().getMechanicRegistrar();
-        registrar.unregisterTopLevel("area");
-        registrar.unregisterTopLevel("togglearea");
+        // Area commands are registered globally via Brigadier, no need to unregister here
     }
 
     @EventHandler(priority = EventPriority.HIGH)

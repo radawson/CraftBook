@@ -29,7 +29,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class MechanicType<T extends CraftBookMechanic> implements Keyed {
 
-    public static final Registry<MechanicType<? extends CraftBookMechanic>> REGISTRY = new Registry<>("mechanic type", "craftbook:mechanic_type");
+    @SuppressWarnings("deprecation")
+    public static final Registry<MechanicType<? extends CraftBookMechanic>> REGISTRY = new Registry<>("mechanic type");
 
     private final String id;
     private final String name;

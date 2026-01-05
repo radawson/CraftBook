@@ -38,7 +38,6 @@ import org.enginehub.craftbook.mechanics.variables.exception.ExistingVariableExc
 import org.enginehub.craftbook.mechanics.variables.exception.InvalidVariableException;
 import org.enginehub.craftbook.mechanics.variables.exception.UnknownVariableException;
 import org.enginehub.craftbook.mechanics.variables.exception.VariableException;
-import org.enginehub.craftbook.util.profile.Profile;
 import org.enginehub.piston.CommandManager;
 import org.enginehub.piston.annotation.Command;
 import org.enginehub.piston.annotation.CommandContainer;
@@ -336,7 +335,7 @@ public class VariableCommands {
             }
             if (namespace.contains("-")) {
                 try {
-                    Profile profile = CraftBook.getInstance().getProfileService().findByUuid(UUID.fromString(namespace));
+                    org.enginehub.craftbook.util.profile.Profile profile = CraftBook.getInstance().getProfileService().findByUuid(UUID.fromString(namespace));
                     if (profile != null) {
                         namespace = profile.getName();
                     }

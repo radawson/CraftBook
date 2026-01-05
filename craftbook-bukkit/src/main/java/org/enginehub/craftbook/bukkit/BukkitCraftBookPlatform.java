@@ -93,7 +93,7 @@ public class BukkitCraftBookPlatform implements CraftBookPlatform {
             CraftBookPlugin.inst().createDefaultConfiguration("config.yml");
         } catch (Exception ignored) {
         }
-        config = new BukkitConfiguration(new YAMLProcessor(CraftBook.getInstance().getPlatform().getWorkingDirectory().resolve("config.yml"), true, YAMLFormat.EXTENDED));
+        config = new BukkitConfiguration(new YAMLProcessor(CraftBook.getInstance().getPlatform().getWorkingDirectory().resolve("config.yml").toFile(), true, YAMLFormat.EXTENDED));
 
         try {
             config.load();
@@ -116,11 +116,15 @@ public class BukkitCraftBookPlatform implements CraftBookPlatform {
     @Override
     public void unload() {
         this.mechanicManager.shutdown();
-        this.selfTriggerManager.shutdown();
+        if (this.selfTriggerManager != null) {
+            this.selfTriggerManager.shutdown();
+        }
     }
 
     @Override
     public void registerCommands(CommandManager commandManager) {
+        // During migration: Register Piston commands for backward compatibility
+        // Once all commands are migrated to Brigadier, this can be removed
         BukkitCommandInspector inspector = new BukkitCommandInspector(CraftBookPlugin.inst(), commandManager);
 
         CommandRegistration registration = new CommandRegistration(CraftBookPlugin.inst());
@@ -141,6 +145,8 @@ public class BukkitCraftBookPlatform implements CraftBookPlatform {
                     reduceToText(command.getDescription(), WorldEdit.getInstance().getConfiguration().defaultLocale), aliases,
                     inspector, permissionsArray);
             }).collect(Collectors.toList()));
+
+        // Note: Brigadier commands are registered via CraftBookBootstrap during COMMANDS lifecycle event
     }
 
     public void resetCommandRegistration(CraftBookPlugin plugin) {

@@ -1,6 +1,7 @@
 name: CraftBook5
 version: "${internalVersion}"
 main: org.enginehub.craftbook.bukkit.CraftBookPlugin
+bootstrap: org.enginehub.craftbook.bukkit.CraftBookBootstrap
 author: EngineHub
 api-version: "1.21.10"
 dependencies:

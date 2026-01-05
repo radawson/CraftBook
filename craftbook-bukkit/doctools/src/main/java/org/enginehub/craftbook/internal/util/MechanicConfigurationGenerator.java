@@ -48,7 +48,8 @@ public class MechanicConfigurationGenerator {
                 CraftBookMechanic me = mechanicRegistration.getMechanicClass().getDeclaredConstructor(MechanicType.class).newInstance(mechanicRegistration);
                 Path file = getMechanicConfigFolder().resolve(mechanicRegistration.id() + ".yml");
 
-                YAMLProcessor mechanicConfig = new YAMLProcessor(file, true, YAMLFormat.EXTENDED);
+                @SuppressWarnings({"deprecation", "InlineMeInliner"})
+                YAMLProcessor mechanicConfig = new YAMLProcessor(file.toFile(), true, YAMLFormat.EXTENDED);
 
                 try {
                     mechanicConfig.load();

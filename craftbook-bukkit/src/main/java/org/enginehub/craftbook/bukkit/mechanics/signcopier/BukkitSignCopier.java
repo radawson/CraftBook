@@ -33,17 +33,12 @@ import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.enginehub.craftbook.CraftBook;
 import org.enginehub.craftbook.CraftBookPlayer;
-import org.enginehub.craftbook.bukkit.CraftBookPlugin;
 import org.enginehub.craftbook.bukkit.events.SignClickEvent;
 import org.enginehub.craftbook.mechanic.CraftBookMechanic;
-import org.enginehub.craftbook.mechanic.MechanicCommandRegistrar;
 import org.enginehub.craftbook.mechanic.MechanicType;
 import org.enginehub.craftbook.mechanics.signcopier.SignCopier;
-import org.enginehub.craftbook.mechanics.signcopier.SignEditCommands;
 import org.enginehub.craftbook.util.EventUtil;
 import org.enginehub.craftbook.util.ProtectionUtil;
-
-import java.util.List;
 
 public class BukkitSignCopier extends SignCopier implements Listener {
     public BukkitSignCopier(MechanicType<? extends CraftBookMechanic> mechanicType) {
@@ -52,22 +47,12 @@ public class BukkitSignCopier extends SignCopier implements Listener {
 
     @Override
     public void enable() {
-        MechanicCommandRegistrar registrar = CraftBookPlugin.inst().getCommandManager().getMechanicRegistrar();
-        registrar.registerTopLevelWithSubCommands(
-            "signedit",
-            List.of("edsign", "signcopy"),
-            "CraftBook SignCopier Commands",
-            (commandManager, registration) -> SignEditCommands.register(commandManager, registration, this)
-        );
+        // SignEdit commands are now registered via Brigadier in CraftBookBootstrap
     }
 
     @Override
     public void disable() {
-        MechanicCommandRegistrar registrar = CraftBookPlugin.inst().getCommandManager().getMechanicRegistrar();
-        registrar.unregisterTopLevel("signedit");
-        registrar.unregisterTopLevel("edsign");
-        registrar.unregisterTopLevel("signcopy");
-
+        // SignEdit commands are registered globally via Brigadier, no need to unregister here
         signs.clear();
     }
 
